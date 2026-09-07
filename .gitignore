@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Environments / secrets
+.env
+.venv/
+venv/
+
+# Notebook scratch
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

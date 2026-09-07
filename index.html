@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Support Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --base:#0f1720; --panel:#16202b; --panel2:#121a23; --line:#22303c;
+    --text:#e8edf2; --muted:#8b9aa8; --muted2:#6f8090;
+    --accent:#4a9eff; --green:#3fb37f; --red:#e05252; --amber:#e0a83f;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--base); color:var(--text);
+    font-family:'IBM Plex Sans',system-ui,sans-serif; padding:20px 22px 40px;
+  }
+  ::selection { background:#4a9eff44; }
+  textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  ::-webkit-scrollbar { width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb { background:#2a3a48; border-radius:8px; }
+
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+  .brand { font-size:20px; font-weight:700; letter-spacing:-.3px; }
+  .sub { font-size:12px; color:var(--muted2); margin-top:2px; }
+  .controls { display:flex; align-items:center; gap:12px; }
+
+  .toggle { display:inline-flex; background:var(--panel2); border-radius:10px; padding:3px; border:1px solid var(--line); }
+  .toggle button { border:none; background:transparent; color:var(--muted); padding:7px 16px;
+    font-size:13px; font-weight:600; border-radius:7px; cursor:pointer; }
+  .toggle button.active { background:#25384a; color:#fff; }
+
+  .conn { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); }
+  .dot { width:8px; height:8px; border-radius:8px; background:var(--muted2); }
+  .dot.live { background:var(--green); box-shadow:0 0 8px #3fb37f88; }
+  .dot.mock { background:var(--amber); box-shadow:0 0 8px #e0a83f88; }
+
+  .stage { display:grid; gap:18px; align-items:start; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; min-height:440px; display:flex; flex-direction:column; }
+  .panelLabel { font-size:12px; font-weight:600; color:var(--muted); padding:12px 16px;
+    border-bottom:1px solid var(--line); background:var(--panel2);
+    display:flex; justify-content:space-between; align-items:center; }
+  .spinner { font-size:11px; color:var(--accent); }
+
+  .chat { flex:1; padding:16px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+  .bCust { align-self:flex-start; max-width:85%; background:#25384a; padding:11px 14px;
+    border-radius:4px 14px 14px 14px; font-size:14px; line-height:1.5; }
+  .bAgent { align-self:flex-end; max-width:85%; background:#1d4e3a; padding:11px 14px;
+    border-radius:14px 4px 14px 14px; font-size:14px; line-height:1.5; }
+
+  .composer { border-top:1px solid var(--line); padding:12px; background:var(--panel2); }
+  .composer textarea { width:100%; background:var(--base); border:1px solid #2a3a48;
+    border-radius:8px; color:var(--text); padding:10px 12px; font-size:14px; resize:vertical; font-family:inherit; }
+  .sendBtn { margin-top:8px; width:100%; background:var(--accent); color:#08111a; border:none;
+    border-radius:8px; padding:10px; font-size:14px; font-weight:700; cursor:pointer; }
+
+  .risk { display:flex; border-bottom:1px solid var(--line); background:var(--panel2); flex-wrap:wrap; }
+  .cell { flex:1; min-width:120px; padding:12px 14px; border-right:1px solid var(--line); }
+  .cell .lbl { font-size:11px; color:var(--muted2); margin-bottom:6px; }
+  .cell .val { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; text-transform:capitalize; }
+  .sig { width:8px; height:8px; border-radius:8px; }
+
+  .agentBody { display:grid; grid-template-columns:1fr 1.25fr; flex:1; min-height:0; }
+  .ground { padding:16px; border-right:1px solid var(--line); overflow-y:auto; }
+  .reply { padding:16px; display:flex; flex-direction:column; }
+  .secTitle { font-size:12px; font-weight:600; color:var(--muted2); margin-bottom:10px; }
+
+  .faq { background:var(--base); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:10px; }
+  .faqTop { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .faqId { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--accent); font-weight:600; }
+  .faqMatch { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--green); font-weight:600; }
+  .faqTitle { font-size:14px; font-weight:600; margin-bottom:3px; }
+  .faqBody { font-size:13px; color:#9fb0be; line-height:1.45; }
+  .faqEmpty { background:#231a1a; border:1px solid #4a2c2c; border-radius:10px; padding:14px;
+    font-size:13px; color:#e0a0a0; line-height:1.5; }
+
+  .order { margin-top:6px; background:var(--base); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .orderRow { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; color:#9fb0be; }
+  .orderRow b { color:var(--text); }
+
+  .replyBox { flex:1; min-height:150px; background:var(--base); border:1px solid #3a5570;
+    border-radius:10px; color:#eef3f7; padding:14px 16px; font-size:15px; line-height:1.6; resize:vertical; font-family:inherit; }
+  .replyActions { display:flex; gap:10px; margin-top:12px; }
+  .ghost { background:transparent; border:1px solid #2a3a48; color:var(--muted); border-radius:8px;
+    padding:9px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+  .primary { flex:1; background:var(--green); color:#06140d; border:none; border-radius:8px;
+    padding:9px 14px; font-size:14px; font-weight:700; cursor:pointer; }
+  .policyNote { margin-top:14px; font-size:12px; color:#7f909e; line-height:1.5;
+    border-top:1px solid var(--line); padding-top:12px; }
+  .policyTag { display:inline-block; font-size:11px; font-weight:600; color:var(--green);
+    background:#12261c; padding:2px 8px; border-radius:6px; margin-right:8px; }
+  .scoreStrip { display:flex; gap:14px; margin-top:12px; padding:12px; background:var(--panel2);
+    border:1px solid var(--line); border-radius:10px; }
+  .score { font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted); }
+  .score b { color:var(--text); font-size:15px; }
+  .tip { margin-top:8px; font-size:13px; color:#c9d4de; line-height:1.5; }
+
+  /* ---------- ticket queue dashboard ---------- */
+  .qStats { display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .qStat { flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:14px 16px; }
+  .qStat .n { font-size:26px; font-weight:700; letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
+  .qStat .k { font-size:11px; color:var(--muted2); margin-top:2px; letter-spacing:.3px; }
+
+  .qPanel { background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .qHead { display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:12px 16px; border-bottom:1px solid var(--line); background:var(--panel2); flex-wrap:wrap; }
+  .qHead .t { font-size:13px; font-weight:600; color:var(--text); }
+  .qHead .s { font-size:12px; color:var(--muted2); }
+  .refreshBtn { background:transparent; border:1px solid #2a3a48; color:var(--muted);
+    border-radius:8px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer; }
+  .refreshBtn:hover { border-color:var(--accent); color:var(--accent); }
+
+  .qRow { display:grid; grid-template-columns:38px 96px minmax(200px,1.5fr) minmax(180px,1fr) 92px 104px;
+    gap:14px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--line); }
+  .qRow:last-child { border-bottom:none; }
+  .qRow.hdr { background:var(--panel2); font-size:11px; color:var(--muted2); letter-spacing:.3px; padding:9px 16px; }
+  .qRow:not(.hdr):hover { background:#1a2734; }
+
+  .qRank { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;
+    color:var(--muted2); font-variant-numeric:tabular-nums; }
+  .qRank.top { color:var(--red); }
+
+  .qScoreN { font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;
+    font-variant-numeric:tabular-nums; }
+  .qBar { height:4px; border-radius:4px; background:#22303c; margin-top:5px; overflow:hidden; }
+  .qBar i { display:block; height:100%; border-radius:4px; }
+
+  .qWho { font-size:14px; font-weight:600; }
+  .qId { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); }
+  .qMsg { font-size:12px; color:var(--muted); margin-top:3px; line-height:1.45;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .qIssue { font-size:13px; color:#c9d4de; line-height:1.4; }
+  .qChips { display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; }
+  .chip { font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px;
+    text-transform:capitalize; letter-spacing:.2px; }
+  .chip.high { background:#3a1c1c; color:#f0a0a0; }
+  .chip.medium { background:#3a2f18; color:#e8c67a; }
+  .chip.low { background:#16301f; color:#7fd0a6; }
+  .chip.negative { background:#3a1c1c; color:#f0a0a0; }
+  .chip.neutral { background:#23303c; color:#a8b8c6; }
+  .chip.positive { background:#16301f; color:#7fd0a6; }
+  .chip.tier { background:#1e2c3c; color:#8fb6e8; }
+
+  .qWait { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .qWait b { color:var(--text); font-weight:600; }
+  .coachBtn { width:100%; background:var(--accent); color:#08111a; border:none; border-radius:7px;
+    padding:8px 10px; font-size:12px; font-weight:700; cursor:pointer; }
+  .coachBtn:hover { filter:brightness(1.08); }
+
+  .qEmpty { padding:34px 16px; text-align:center; color:var(--muted); font-size:13px; }
+  .qNote { margin-top:12px; font-size:12px; color:var(--muted2); line-height:1.6; }
+  .qNote code { font-family:'IBM Plex Mono',monospace; color:var(--muted); }
+  .backBtn { background:transparent; border:1px solid #2a3a48; color:var(--muted);
+    border-radius:8px; padding:7px 13px; font-size:12px; font-weight:600; cursor:pointer; margin-right:10px; }
+  .backBtn:hover { border-color:var(--accent); color:var(--accent); }
+
+  @media (max-width:900px){
+    .qRow { grid-template-columns:32px 76px 1fr; row-gap:8px; }
+    .qRow > :nth-child(4), .qRow > :nth-child(5) { grid-column:3; }
+    .qRow > :nth-child(6) { grid-column:1/-1; }
+    .qRow.hdr { display:none; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+/* ============================================================= *
+ *  Config                                                       *
+ * ============================================================= */
+const API_BASE = "http://localhost:8000";
+
+/* ============================================================= *
+ *  Mock fallback — used only when the backend is unreachable,   *
+ *  so a demo never shows a blank screen. Mirrors backend shape. *
+ * ============================================================= */
+const MOCK_FAQ = {
+  refund:[{id:"FAQ-2021",title:"Refund processing time",body:"Approved refunds complete in 5–7 business days.",match:94},
+          {id:"FAQ-2044",title:"Refund delayed past 10 days",body:"Escalate to billing with the order ID.",match:88}],
+  shipping:[{id:"FAQ-1103",title:"Standard vs express shipping",body:"Standard 3–5 days; express 1–2.",match:91}],
+  damaged:[{id:"FAQ-3300",title:"Item arrived damaged",body:"Offer replacement or full refund.",match:96}],
+  technical:[{id:"FAQ-4200",title:"Hardware fault under warranty",body:"12-month defect coverage.",match:85}],
+  account:[{id:"FAQ-5000",title:"Account change verification",body:"Verify identity; never request passwords.",match:82}],
+};
+const MOCK_ORDERS = {
+  "WORD-88221":{order_id:"WORD-88221",product:'Pro Laptop 16"',status:"refund_pending",days_since_refund_request:20,refund_amount:"$1,499.00",customer_tier:"Pro"},
+  "WORD-10233":{order_id:"WORD-10233",product:"Wireless Mouse",status:"shipped",days_since_order:3,tracking:"TRK-556677",customer_tier:"Standard"},
+};
+const MOCK_POLICY = {
+  refund:"Approved refunds process in 5–7 business days; escalate past 10.",
+  shipping:"Standard 3–5 business days; tracking emailed on ship.",
+  damaged:"Replacement or full refund; photo only for carrier claims.",
+  technical:"12-month warranty on defects; route to technical support.",
+  account:"Verify identity before changes; never ask for full passwords.",
+};
+// Order matters: first key wins an equal-hit tie, so the specific failure
+// categories are tested before the generic ones. "The laptop arrived cracked"
+// hits damaged and shipping once each — it is a damage case, not a delivery one.
+const KW = {
+  damaged:["damaged","broken","defective","cracked","shattered","crushed"],
+  technical:["not working","won't turn on","error","crash","fault","warranty","nothing on screen"],
+  account:["account","password","login","log in","sign in","reset","locked out"],
+  refund:["refund","money back","reimburse","my money"],
+  shipping:["shipping","ship","delivery","deliver","tracking","package","where is my order","arrive"],
+};
+function mockAnalyze(text){
+  const t=text.toLowerCase();
+  let issue=null,best=0;
+  for(const[k,ws]of Object.entries(KW)){const h=ws.filter(w=>t.includes(w)).length;if(h>best){best=h;issue=k;}}
+  const om=text.match(/WORD-\d{3,6}/i); const order_id=om?om[0].toUpperCase():null;
+  // Keyword heuristics standing in for the real classifier. Three signal
+  // families, because anger alone misses the customer who is calmly blocked:
+  // ANGRY = how they sound, BLOCKED = whether they can still use the product,
+  // SEVERE = physical/hard failure. Only ANGRY moves sentiment much; BLOCKED
+  // and SEVERE drive urgency. The live backend does this properly.
+  const bang=(text.match(/!/g)||[]).length;
+  const ANGRY=["ridiculous","unacceptable","furious","worst","terrible","frustrat","disappointed","still waiting"];
+  const BLOCKED=["stuck","won't turn on","not working","nothing on screen","unable to",
+                 "can't sign in","can't log in","cannot access","locked out","never arrives","never arrived"];
+  const SEVERE=["cracked","crushed","damaged","broken","shattered","defective","dead"];
+  const TIME=["immediately","asap","urgent","today","deadline","before","20 days","how much longer","still waiting"];
+
+  const angry=ANGRY.filter(w=>t.includes(w)).length;
+  const blocked=BLOCKED.filter(w=>t.includes(w)).length;
+  const severe=SEVERE.filter(w=>t.includes(w)).length;
+  const timed=TIME.filter(w=>t.includes(w)).length;
+
+  const negScore=angry+bang*0.5+blocked*0.75+severe*0.5;
+  const calm=/(no rush|no hurry|just planning|whenever)/.test(t);
+  const sentiment=negScore>=1.5?"negative"
+    :(/(thanks|appreciate|please)/.test(t)||calm)&&negScore<0.5?"positive":"neutral";
+
+  const uh=timed+bang*0.4+blocked*0.75+severe*0.5-(calm?1:0);
+  const urgency=uh>=1.5?"high":uh>=0.75?"medium":"low";
+
+  const sc=(sentiment==="negative"?2:sentiment==="neutral"?1:0)+(urgency==="high"?2:urgency==="medium"?1:0);
+  const escalation_risk=sc>=3?"high":sc>=2?"medium":"low";
+  const key_issue={refund:"Refund delay / money-back request",shipping:"Shipping / delivery status",damaged:"Damaged item on arrival",technical:"Product fault / warranty",account:"Account access / change"}[issue]||"General inquiry — needs classification";
+  const order=order_id?MOCK_ORDERS[order_id]||null:null;
+  const policy=issue?MOCK_POLICY[issue]:null;
+  const faqs=issue?MOCK_FAQ[issue]:null;
+  let reply="Thanks for reaching out — happy to help. ";
+  if(sentiment==="negative")reply="I'm sorry for the frustration, and you're right to expect better. ";
+  if(issue==="refund"&&order)reply+=`I can see the refund on ${order.order_id} (${order.refund_amount}) has been pending ${order.days_since_refund_request} days — past the 5–7 day window, so I'm escalating to billing now.`;
+  else if(issue==="refund")reply+="Approved refunds take 5–7 business days; I'll check exactly where yours stands.";
+  else if(issue==="shipping"&&order)reply+=`Order ${order.order_id} shipped on tracking ${order.tracking}; standard delivery is 3–5 days.`;
+  else if(issue==="shipping")reply+="Standard delivery is 3–5 business days and tracking is emailed on ship. I'll confirm your status.";
+  else if(issue==="damaged")reply+="For a damaged item I can arrange a replacement or full refund right away.";
+  else if(issue==="technical")reply+="This may be a warranty-covered fault; I can start a diagnostic under the 12-month warranty.";
+  else if(issue==="account")reply+="I can help once I've verified your identity — I'll never ask for your full password.";
+  else reply+="Let me get a couple of details so I can point you to the right fix.";
+  return {sentiment,urgency,escalation_risk,key_issue,order_id,issue_type:issue,order,policy,faqs,
+    order_found:!!order,policy_found:!!policy,suggested_reply:reply};
+}
+function mockEvaluate(){return {tone_score:5,empathy_score:4,clarity_score:6,coaching_tip:"Acknowledge the specific delay before setting expectations."};}
+
+/* ============================================================= *
+ *  Ticket queue — mock backlog + priority scoring                *
+ *  Mirrors coach.py: TICKETS, priority_score(), TicketQueue.     *
+ * ============================================================= */
+const MOCK_TICKETS = [
+  {ticket_id:"TCK-4471",customer:"R. Mehta",customer_tier:"Pro",waiting_minutes:1740,
+   message:"I have been waiting for my refund on order WORD-88221 for 20 days! This is ridiculous. I want my money back immediately!"},
+  {ticket_id:"TCK-4468",customer:"S. Okonkwo",customer_tier:"Standard",waiting_minutes:95,
+   message:"Where is my package for order WORD-10233? It was supposed to arrive already."},
+  {ticket_id:"TCK-4472",customer:"L. Fontaine",customer_tier:"Pro",waiting_minutes:22,
+   message:"The laptop arrived with a cracked screen. The box was crushed on one corner. I need this sorted before my trip on Friday."},
+  {ticket_id:"TCK-4460",customer:"D. Whitfield",customer_tier:"Standard",waiting_minutes:2880,
+   message:"Hi, could you tell me how long express shipping usually takes? No rush, just planning ahead."},
+  {ticket_id:"TCK-4475",customer:"A. I'lic",customer_tier:"Pro",waiting_minutes:8,
+   message:"My laptop won't turn on at all after the last update. Nothing on screen. I use this for work and I'm completely stuck."},
+  {ticket_id:"TCK-4463",customer:"K. Nakamura",customer_tier:"Standard",waiting_minutes:610,
+   message:"I can't sign in to my account and the password reset email never arrives. Can you help me get back in?"},
+];
+
+// Same weights and point budget as coach.py — keep these in sync.
+const RISK_W={high:1.0,medium:0.55,low:0.15};
+const URGENCY_W={high:1.0,medium:0.55,low:0.15};
+const SENTIMENT_W={negative:1.0,neutral:0.4,positive:0.0};
+const TIER_W={pro:1.0,standard:0.45};
+const POINTS={risk:40,urgency:30,sentiment:15,tier:10,age:5};
+const AGE_SATURATES=48*60;
+
+function priorityScore(a,t){
+  const parts={
+    risk:     Math.round(POINTS.risk      * (RISK_W[(a.escalation_risk||"").toLowerCase()] ?? 0.15)),
+    urgency:  Math.round(POINTS.urgency   * (URGENCY_W[(a.urgency||"").toLowerCase()] ?? 0.15)),
+    sentiment:Math.round(POINTS.sentiment * (SENTIMENT_W[(a.sentiment||"").toLowerCase()] ?? 0.4)),
+    tier:     Math.round(POINTS.tier      * (TIER_W[(t.customer_tier||"").toLowerCase()] ?? 0.45)),
+    age:      Math.round(POINTS.age       * Math.min((t.waiting_minutes||0)/AGE_SATURATES,1)),
+  };
+  return {score:Object.values(parts).reduce((x,y)=>x+y,0), parts};
+}
+
+function mockQueue(){
+  // The backend drains a real binary heap (coach.py TicketQueue). Sorting on the
+  // identical key here reproduces that exact order without a second heap impl.
+  const rows=MOCK_TICKETS.map(t=>{
+    const a=mockAnalyze(t.message);
+    const {score,parts}=priorityScore(a,t);
+    return {...t,sentiment:a.sentiment,urgency:a.urgency,escalation_risk:a.escalation_risk,
+            key_issue:a.key_issue,order_id:a.order_id,issue_type:a.issue_type,
+            priority_score:score,score_parts:parts};
+  });
+  rows.sort((x,y)=> y.priority_score-x.priority_score || y.waiting_minutes-x.waiting_minutes);
+  rows.forEach((r,i)=>r.rank=i+1);
+  return {tickets:rows,count:rows.length};
+}
+
+/* ============================================================= *
+ *  API layer — try backend, fall back to mock                   *
+ * ============================================================= */
+let connMode = "checking"; // live | mock | checking
+let mockReason = "backend offline"; // why we're on the mock, shown in the status pill
+async function checkHealth(){
+  try{
+    const r=await fetch(API_BASE+"/health",{signal:AbortSignal.timeout(2500)});
+    // /health answers 200 even with no API key, but a keyless backend can't
+    // actually analyse anything — every call would fall through to the mock.
+    // Treat that as mock so the status dot never claims "live" over mock output.
+    const h = r.ok ? await r.json() : null;
+    connMode = (h && h.key_set) ? "live" : "mock";
+    if(connMode==="mock") mockReason = h ? "no GROQ_API_KEY" : "backend offline";
+  }catch{ connMode="mock"; mockReason="backend offline"; }
+  render();
+}
+async function apiAnalyze(message,history){
+  if(connMode==="live"){
+    try{
+      const r=await fetch(API_BASE+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message,history})});
+      if(!r.ok)throw new Error(await r.text());
+      return await r.json();
+    }catch(e){ connMode="mock"; mockReason="backend error"; render(); return mockAnalyze(message); }
+  }
+  return mockAnalyze(message);
+}
+async function apiEvaluate(customer_message,agent_message){
+  if(connMode==="live"){
+    try{
+      const r=await fetch(API_BASE+"/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({customer_message,agent_message})});
+      if(!r.ok)throw new Error(await r.text());
+      return await r.json();
+    }catch{ connMode="mock"; mockReason="backend error"; render(); return mockEvaluate(); }
+  }
+  return mockEvaluate();
+}
+
+async function apiQueue(){
+  if(connMode==="live"){
+    try{
+      const r=await fetch(API_BASE+"/queue",{signal:AbortSignal.timeout(60000)});
+      if(!r.ok)throw new Error(await r.text());
+      return await r.json();
+    }catch{ connMode="mock"; mockReason="backend error"; render(); return mockQueue(); }
+  }
+  return mockQueue();
+}
+
+/* ============================================================= *
+ *  State + render (vanilla, no framework needed)                *
+ * ============================================================= */
+const SIG={high:"var(--red)",negative:"var(--red)",medium:"var(--amber)",neutral:"var(--muted2)",low:"var(--green)",positive:"var(--green)"};
+const state={
+  screen:"queue",            // queue | coach
+  view:"split",
+  query:"I have been waiting for my refund on order WORD-88221 for 20 days! This is ridiculous. I want my money back immediately!",
+  draftInput:"",
+  analysis:null, suggested:"", editedReply:"", sent:false, loading:false,
+  feedback:null,
+  tickets:[], queueLoading:false, activeTicket:null,
+};
+
+function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+
+async function runAnalysis(){
+  state.loading=true; render();
+  const a=await apiAnalyze(state.query,[]);
+  state.analysis=a; state.suggested=a.suggested_reply; state.editedReply=a.suggested_reply;
+  state.sent=false; state.feedback=null; state.loading=false; render();
+}
+
+function setView(v){state.view=v;render();}
+function setScreen(s){
+  state.screen=s; render();
+  if(s==="queue"&&!state.tickets.length&&!state.queueLoading)loadQueue();
+  if(s==="coach"&&!state.analysis&&!state.loading)runAnalysis();
+}
+
+async function loadQueue(){
+  state.queueLoading=true; render();
+  const q=await apiQueue();
+  state.tickets=q.tickets||[]; state.queueLoading=false; render();
+}
+
+// Pick a ticket off the queue and open it in the coaching workspace.
+function coachTicket(id){
+  const t=state.tickets.find(x=>x.ticket_id===id);
+  if(!t)return;
+  state.activeTicket=t;
+  state.query=t.message;
+  state.screen="coach"; state.view="split";
+  runAnalysis();
+}
+
+function fmtWait(m){
+  if(m<60)return m+"m";
+  if(m<1440)return Math.floor(m/60)+"h "+(m%60?(m%60)+"m":"");
+  return Math.floor(m/1440)+"d "+(Math.floor(m%1440/60)||0)+"h";
+}
+function scoreColor(s){ return s>=75?"var(--red)":s>=45?"var(--amber)":"var(--green)"; }
+function submitQuery(){
+  if(!state.draftInput.trim())return;
+  state.query=state.draftInput.trim(); state.draftInput="";
+  if(state.view==="customer")state.view="split";
+  runAnalysis();
+}
+async function sendReply(){
+  state.sent=true; render();
+  state.feedback=await apiEvaluate(state.query,state.editedReply); render();
+}
+
+function cell(label,value){
+  const c=SIG[(value||"").toLowerCase()]||"var(--muted2)";
+  return `<div class="cell"><div class="lbl">${label}</div>
+    <div class="val"><span class="sig" style="background:${c};box-shadow:0 0 8px ${c}88"></span>${esc(value||"—")}</div></div>`;
+}
+
+function queueScreen(){
+  const ts=state.tickets;
+  const high=ts.filter(t=>(t.escalation_risk||"").toLowerCase()==="high").length;
+  const longest=ts.reduce((m,t)=>Math.max(m,t.waiting_minutes||0),0);
+  const top=ts[0];
+
+  const rows = state.queueLoading
+    ? `<div class="qEmpty">Analyzing the backlog… one pass per ticket.</div>`
+    : !ts.length
+      ? `<div class="qEmpty">No open tickets.</div>`
+      : `<div class="qRow hdr"><div>#</div><div>Priority</div><div>Customer</div>
+           <div>Issue</div><div>Waiting</div><div></div></div>` +
+        ts.map(t=>`
+        <div class="qRow">
+          <div class="qRank ${t.rank===1?"top":""}">${t.rank}</div>
+          <div>
+            <div class="qScoreN" style="color:${scoreColor(t.priority_score)}">${t.priority_score}</div>
+            <div class="qBar"><i style="width:${t.priority_score}%;background:${scoreColor(t.priority_score)}"></i></div>
+          </div>
+          <div>
+            <div class="qWho">${esc(t.customer)} <span class="qId">${esc(t.ticket_id)}</span></div>
+            <div class="qMsg">${esc(t.message)}</div>
+          </div>
+          <div>
+            <div class="qIssue">${esc(t.key_issue||"—")}</div>
+            <div class="qChips">
+              <span class="chip ${(t.escalation_risk||"").toLowerCase()}">risk ${esc(t.escalation_risk||"?")}</span>
+              <span class="chip ${(t.urgency||"").toLowerCase()}">${esc(t.urgency||"?")} urgency</span>
+              <span class="chip ${(t.sentiment||"").toLowerCase()}">${esc(t.sentiment||"?")}</span>
+              <span class="chip tier">${esc(t.customer_tier)}</span>
+            </div>
+          </div>
+          <div class="qWait"><b>${fmtWait(t.waiting_minutes)}</b></div>
+          <div><button class="coachBtn" onclick="coachTicket('${esc(t.ticket_id)}')">Coach this</button></div>
+        </div>`).join("");
+
+  return `
+    <div class="qStats">
+      <div class="qStat"><div class="n">${ts.length}</div><div class="k">OPEN TICKETS</div></div>
+      <div class="qStat"><div class="n" style="color:var(--red)">${high}</div><div class="k">HIGH ESCALATION RISK</div></div>
+      <div class="qStat"><div class="n">${longest?fmtWait(longest):"—"}</div><div class="k">LONGEST WAIT</div></div>
+      <div class="qStat"><div class="n" style="color:${top?scoreColor(top.priority_score):"var(--muted2)"}">${top?top.priority_score:"—"}</div>
+        <div class="k">TOP PRIORITY ${top?"· "+esc(top.ticket_id):""}</div></div>
+    </div>
+    <div class="qPanel">
+      <div class="qHead">
+        <div>
+          <div class="t">Ticket queue</div>
+          <div class="s">Ordered by a priority heap — highest score first, longest wait breaks ties.</div>
+        </div>
+        <button class="refreshBtn" onclick="loadQueue()" ${state.queueLoading?"disabled":""}>
+          ${state.queueLoading?"Working…":"Re-analyze queue"}</button>
+      </div>
+      ${rows}
+    </div>
+    <div class="qNote">
+      Score is <code>risk 40 · urgency 30 · sentiment 15 · tier 10 · wait 5</code> = 100.
+      Risk, urgency and sentiment come from analyzing each message; tier and wait time come
+      from the ticket record. Waiting time saturates at 48h so age can't outrank real risk —
+      which is why the oldest ticket here is not the top one.
+    </div>`;
+}
+
+function render(){
+  const a=state.analysis;
+  const showC=state.view==="customer"||state.view==="split";
+  const showA=state.view==="agent"||state.view==="split";
+  const connLabel=connMode==="live"?"Live backend":connMode==="mock"?`Mock (${mockReason})`:"Connecting…";
+  const connClass=connMode==="live"?"live":connMode==="mock"?"mock":"";
+
+  const customerPanel = showC ? `
+    <section class="panel">
+      <div class="panelLabel">Customer</div>
+      <div class="chat">
+        <div class="bCust">${esc(state.query)}</div>
+        ${state.sent&&state.editedReply?`<div class="bAgent">${esc(state.editedReply)}</div>`:""}
+      </div>
+      <div class="composer">
+        <textarea id="draft" rows="3" placeholder="Type a customer message…  (⌘/Ctrl+Enter to send)">${esc(state.draftInput)}</textarea>
+        <button class="sendBtn" onclick="submitQuery()">Send message</button>
+      </div>
+    </section>` : "";
+
+  let agentPanel="";
+  if(showA){
+    const inner = !a ? `<div style="padding:24px;color:var(--muted)">Send a customer message to see analysis.</div>` : `
+      <div class="risk">
+        ${cell("Sentiment",a.sentiment)}
+        ${cell("Urgency",a.urgency)}
+        ${cell("Escalation risk",a.escalation_risk)}
+        <div class="cell" style="flex:1.4"><div class="lbl">Key issue</div>
+          <div style="font-size:14px;font-weight:500">${esc(a.key_issue)}</div></div>
+      </div>
+      <div class="agentBody">
+        <div class="ground">
+          <div class="secTitle">Matched knowledge</div>
+          ${a.faqs&&a.faqs.length?a.faqs.map(f=>`
+            <div class="faq">
+              <div class="faqTop"><span class="faqId">${esc(f.id)}</span><span class="faqMatch">${f.match}% match</span></div>
+              <div class="faqTitle">${esc(f.title)}</div>
+              <div class="faqBody">${esc(f.body)}</div>
+            </div>`).join("")
+            :`<div class="faqEmpty">No strong FAQ match. Classify the issue or escalate to a human agent.</div>`}
+          ${a.order?`<div class="order"><div class="secTitle">Order on file</div>
+            <div class="orderRow"><span>Order</span><b>${esc(a.order.order_id)}</b></div>
+            <div class="orderRow"><span>Product</span><b>${esc(a.order.product)}</b></div>
+            <div class="orderRow"><span>Status</span><b>${esc((a.order.status||"").replace(/_/g," "))}</b></div>
+            ${a.order.refund_amount?`<div class="orderRow"><span>Amount</span><b>${esc(a.order.refund_amount)}</b></div>`:""}
+            ${"days_since_refund_request"in a.order?`<div class="orderRow"><span>Pending</span><b>${a.order.days_since_refund_request} days</b></div>`:""}
+            ${a.order.tracking?`<div class="orderRow"><span>Tracking</span><b>${esc(a.order.tracking)}</b></div>`:""}
+            <div class="orderRow"><span>Tier</span><b>${esc(a.order.customer_tier)}</b></div></div>`:""}
+        </div>
+        <div class="reply">
+          <div class="secTitle">Suggested reply · editable</div>
+          <textarea class="replyBox" id="replyBox" oninput="state.editedReply=this.value">${esc(state.editedReply)}</textarea>
+          <div class="replyActions">
+            <button class="ghost" onclick="state.editedReply=state.suggested;render()" ${state.editedReply===state.suggested?"disabled":""}>Reset to suggestion</button>
+            <button class="primary" onclick="sendReply()">${state.sent?"Sent ✓":"Send to customer"}</button>
+          </div>
+          ${state.feedback?`<div class="scoreStrip">
+            <span class="score">Tone <b>${state.feedback.tone_score}</b>/10</span>
+            <span class="score">Empathy <b>${state.feedback.empathy_score}</b>/10</span>
+            <span class="score">Clarity <b>${state.feedback.clarity_score}</b>/10</span>
+          </div><div class="tip">💡 ${esc(state.feedback.coaching_tip)}</div>`:""}
+          ${a.policy?`<div class="policyNote"><span class="policyTag">Grounded in policy</span>${esc(a.policy)}</div>`:""}
+        </div>
+      </div>`;
+    agentPanel=`<section class="panel">
+      <div class="panelLabel">Agent workspace ${state.loading?'<span class="spinner">analyzing…</span>':""}</div>
+      ${inner}</section>`;
+  }
+
+  const onQueue = state.screen==="queue";
+  const sub = onQueue
+    ? "Ticket queue · priority-ordered"
+    : state.activeTicket
+      ? `Coaching ${state.activeTicket.ticket_id} · ${state.activeTicket.customer}`
+      : "Live response guidance · demo";
+
+  document.getElementById("root").innerHTML=`
+    <header>
+      <div><div class="brand">Support Coach</div><div class="sub">${esc(sub)}</div></div>
+      <div class="controls">
+        <div class="conn"><span class="dot ${connClass}"></span>${connLabel}</div>
+        <div class="toggle">
+          <button class="${onQueue?"active":""}" onclick="setScreen('queue')">Queue</button>
+          <button class="${!onQueue?"active":""}" onclick="setScreen('coach')">Coaching</button>
+        </div>
+        ${onQueue?"":`<div class="toggle">
+          ${["customer","split","agent"].map(v=>`<button class="${state.view===v?"active":""}" onclick="setView('${v}')">${v==="customer"?"Customer":v==="agent"?"Agent":"Both"}</button>`).join("")}
+        </div>`}
+      </div>
+    </header>
+    ${onQueue ? queueScreen() : `
+      ${state.activeTicket?`<div style="margin-bottom:12px"><button class="backBtn" onclick="setScreen('queue')">← Back to queue</button></div>`:""}
+      <div class="stage" style="grid-template-columns:${state.view==="split"?"1fr 1.4fr":"1fr"}">
+        ${customerPanel}${agentPanel}
+      </div>`}`;
+
+  // rebind draft textarea value + shortcut
+  const d=document.getElementById("draft");
+  if(d){
+    d.oninput=e=>{state.draftInput=e.target.value;};
+    d.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey))submitQuery();};
+  }
+}
+
+// boot — await the health check first, otherwise connMode is still "checking"
+// when the first request fires and it silently uses the mock on a live backend.
+(async ()=>{
+  await checkHealth();
+  loadQueue();
+})();
+</script>
+</body>
+</html>
