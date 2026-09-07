@@ -86,7 +86,8 @@ fires `/analyze`, the normal per-message path.
 
 ## Notes
 
-- Model defaults to `llama-3.3-70b-versatile` on Groq (fast, cheap, follows the JSON contracts).
+- Model defaults to `openai/gpt-oss-120b` on Groq. Check `GET /openai/v1/models` before changing it —
+  Groq retires model IDs faster than its docs page updates.
   Override with `GROQ_MODEL`.
 - CORS is open (`*`) for local convenience. Lock it down before any real deployment.
 - The backend never handles your key beyond reading the env var; the UI never sees it.

@@ -318,10 +318,12 @@ class AICoach:
         # without the groq package installed.
         from groq import Groq
         self.client = Groq(api_key=api_key)
-        # llama-3.3-70b-versatile follows instructions well enough for the
-        # JSON contracts below and is fast enough for a per-message loop.
-        # Override with GROQ_MODEL (e.g. openai/gpt-oss-120b).
-        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        # openai/gpt-oss-120b: follows the JSON contracts below reliably and is
+        # fast enough for a per-message loop. Override with GROQ_MODEL —
+        # openai/gpt-oss-20b is quicker if the queue feels slow.
+        # Check availability with GET /openai/v1/models before changing this;
+        # Groq retires model IDs faster than the docs page is updated.
+        self.model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
     # ---------- helpers ----------
 
