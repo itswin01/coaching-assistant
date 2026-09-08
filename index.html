@@ -180,14 +180,88 @@ const API_BASE = "http://localhost:8000";
  *  Mock fallback — used only when the backend is unreachable,   *
  *  so a demo never shows a blank screen. Mirrors backend shape. *
  * ============================================================= */
-const MOCK_FAQ = {
-  refund:[{id:"FAQ-2021",title:"Refund processing time",body:"Approved refunds complete in 5–7 business days.",match:94},
-          {id:"FAQ-2044",title:"Refund delayed past 10 days",body:"Escalate to billing with the order ID.",match:88}],
-  shipping:[{id:"FAQ-1103",title:"Standard vs express shipping",body:"Standard 3–5 days; express 1–2.",match:91}],
-  damaged:[{id:"FAQ-3300",title:"Item arrived damaged",body:"Offer replacement or full refund.",match:96}],
-  technical:[{id:"FAQ-4200",title:"Hardware fault under warranty",body:"12-month defect coverage.",match:85}],
-  account:[{id:"FAQ-5000",title:"Account change verification",body:"Verify identity; never request passwords.",match:82}],
-};
+/* ============================================================= *
+ *  BM25 retrieval — a port of retrieval.py, over the same        *
+ *  faqs.json. The offline path must rank the way the backend     *
+ *  ranks; a mock with invented match percentages next to a real  *
+ *  retriever is exactly the thing this feature removes.          *
+ *  Constants below mirror retrieval.py — change both together.   *
+ * ============================================================= */
+const K1=1.5, B=0.75, FIELD_W={title:3,tags:2,body:1};
+const MIN_SCORE=3.0, MIN_SCORE_PER_TERM=1.8, EXPANSION_W=0.45, FLOOR_TERM_CAP=5;
+const STOP=new Set(("a an the and or but if is are was were be been being to of in on at for with about as by from it its this that these those i me my we our you your he she they them their have has had do does did can could will would should there here what when where who how why not no so up out get got just very please hi hello").split(" "));
+const SYN={money:["refund"],cash:["refund"],reimburse:["refund"],repay:["refund"],parcel:["package","shipping","delivery"],
+  package:["shipping","delivery"],postage:["shipping"],courier:["carrier","shipping"],arrive:["delivery","shipping"],
+  arrived:["delivery","shipping"],late:["delay","delayed"],waiting:["delay","delayed"],broken:["damaged","faulty"],
+  cracked:["damaged"],smashed:["damaged"],shattered:["damaged"],crushed:["damaged"],faulty:["defect","technical"],
+  defective:["defect","technical"],dead:["power","technical"],login:["sign","account"],password:["account","reset"],
+  charged:["billing","charge"],billed:["billing","charge"],invoice:["billing","receipt"],swap:["exchange","returns"],
+  replace:["replacement"],voucher:["promo","discount"],coupon:["promo","discount"],guarantee:["warranty"],
+  repair:["technical","warranty"]};
+const ORDER_ID_RE=/\b[a-z]{2,6}-\d{3,8}\b/gi;
+
+function tok(text){
+  const out=[];
+  for(const w of String(text||"").toLowerCase().match(/[a-z0-9]+/g)||[]){
+    if(STOP.has(w)||w.length<2)continue;
+    let t=w;
+    if(t.length>3&&t.endsWith("es")&&!t.endsWith("ses"))t=t.slice(0,-2);
+    else if(t.length>3&&t.endsWith("s")&&!t.endsWith("ss"))t=t.slice(0,-1);
+    out.push(t);
+  }
+  return out;
+}
+function buildQuery(q){
+  const base=tok(String(q||"").replace(ORDER_ID_RE," "));
+  const w={};
+  for(const t of base) w[t]=1.0;
+  for(const t of base) for(const s of (SYN[t]||[])) for(const st of tok(s)) if(!(st in w)) w[st]=EXPANSION_W;
+  return {weights:w, nTerms:new Set(base).size};
+}
+
+let FAQ_INDEX=null;
+function buildIndex(faqs){
+  const docs=faqs.map(f=>{
+    const t=[];
+    for(const [field,wt] of Object.entries(FIELD_W)){
+      const v=f[field], text=Array.isArray(v)?v.join(" "):String(v||"");
+      for(let i=0;i<wt;i++) t.push(...tok(text));
+    }
+    const freqs={};
+    for(const x of t) freqs[x]=(freqs[x]||0)+1;
+    return {faq:f, freqs, len:t.length};
+  });
+  const df={};
+  for(const d of docs) for(const term of Object.keys(d.freqs)) df[term]=(df[term]||0)+1;
+  const avgdl=docs.reduce((s,d)=>s+d.len,0)/(docs.length||1);
+  return {docs, df, n:docs.length, avgdl};
+}
+function faqSearch(query, k=3, category=null){
+  if(!FAQ_INDEX) return null;               // corpus not loaded yet
+  const {weights,nTerms}=buildQuery(query);
+  if(!Object.keys(weights).length) return [];
+  const floor=Math.max(MIN_SCORE, MIN_SCORE_PER_TERM*Math.min(Math.max(nTerms,1),FLOOR_TERM_CAP));
+  const {docs,df,n,avgdl}=FAQ_INDEX;
+  const scored=[];
+  for(const d of docs){
+    let s=0;
+    for(const [term,w] of Object.entries(weights)){
+      const f=d.freqs[term]; if(!f) continue;
+      const idf=Math.log(1+(n-(df[term]||0)+0.5)/((df[term]||0)+0.5));
+      s+=w*idf*(f*(K1+1))/(f+K1*(1-B+B*(d.len/(avgdl||1))));
+    }
+    if(s<=0) continue;
+    if(category&&d.faq.category===category) s*=1.15;
+    scored.push([s,d.faq]);
+  }
+  scored.sort((a,b)=> b[0]-a[0] || (a[1].id<b[1].id?-1:1));
+  const out=[];
+  for(const [s,faq] of scored.slice(0,k)){
+    if(s<floor) break;
+    out.push({id:faq.id,title:faq.title,body:faq.body,category:faq.category,score:Math.round(s*100)/100});
+  }
+  return out;
+}
 const MOCK_ORDERS = {
   "WORD-88221":{order_id:"WORD-88221",product:'Pro Laptop 16"',status:"refund_pending",days_since_refund_request:20,refund_amount:"$1,499.00",customer_tier:"Pro"},
   "WORD-10233":{order_id:"WORD-10233",product:"Wireless Mouse",status:"shipped",days_since_order:3,tracking:"TRK-556677",customer_tier:"Standard"},
@@ -244,7 +318,7 @@ function mockAnalyze(text){
   const key_issue={refund:"Refund delay / money-back request",shipping:"Shipping / delivery status",damaged:"Damaged item on arrival",technical:"Product fault / warranty",account:"Account access / change"}[issue]||"General inquiry — needs classification";
   const order=order_id?MOCK_ORDERS[order_id]||null:null;
   const policy=issue?MOCK_POLICY[issue]:null;
-  const faqs=issue?MOCK_FAQ[issue]:null;
+  const faqs=faqSearch(text,3,issue);   // real BM25, same corpus as the backend
   let reply="Thanks for reaching out — happy to help. ";
   if(sentiment==="negative")reply="I'm sorry for the frustration, and you're right to expect better. ";
   if(issue==="refund"&&order)reply+=`I can see the refund on ${order.order_id} (${order.refund_amount}) has been pending ${order.days_since_refund_request} days — past the 5–7 day window, so I'm escalating to billing now.`;
@@ -330,22 +404,22 @@ async function checkHealth(){
   }catch{ connMode="mock"; mockReason="backend offline"; }
   render();
 }
-async function apiAnalyze(message,history){
+async function apiAnalyze(message,history,ticket_id){
   if(connMode==="live"){
     try{
       const r=await fetch(API_BASE+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({message,history})});
+        body:JSON.stringify({message,history,ticket_id})});
       if(!r.ok)throw new Error(await r.text());
       return await r.json();
     }catch(e){ connMode="mock"; mockReason="backend error"; render(); return mockAnalyze(message); }
   }
   return mockAnalyze(message);
 }
-async function apiEvaluate(customer_message,agent_message){
+async function apiEvaluate(customer_message,agent_message,ticket_id){
   if(connMode==="live"){
     try{
       const r=await fetch(API_BASE+"/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({customer_message,agent_message})});
+        body:JSON.stringify({customer_message,agent_message,ticket_id})});
       if(!r.ok)throw new Error(await r.text());
       return await r.json();
     }catch{ connMode="mock"; mockReason="backend error"; render(); return mockEvaluate(); }
@@ -376,14 +450,24 @@ const state={
   analysis:null, suggested:"", editedReply:"", sent:false, loading:false,
   feedback:null,
   tickets:[], queueLoading:false, activeTicket:null,
+  thread:[],                 // full conversation for the open ticket
+  resolved:new Set(),        // ticket ids handled this session
+  resolvedCount:0,
 };
 
 function esc(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
 async function runAnalysis(){
   state.loading=true; render();
-  const a=await apiAnalyze(state.query,[]);
+  const tid=state.activeTicket ? state.activeTicket.ticket_id : null;
+  // On the mock path there is no server thread, so send the local one.
+  const localHist=state.thread.map(m=>({speaker:m.speaker,text:m.text}));
+  const a=await apiAnalyze(state.query,localHist,tid);
   state.analysis=a; state.suggested=a.suggested_reply; state.editedReply=a.suggested_reply;
+  // The server's stored thread wins when there is one; it survives refresh.
+  if(a.history && a.history.length) state.thread=a.history;
+  else if(!state.thread.some(m=>m.speaker==="customer"&&m.text===state.query))
+    state.thread=[...state.thread,{speaker:"customer",text:state.query}];
   state.sent=false; state.feedback=null; state.loading=false; render();
 }
 
@@ -397,7 +481,8 @@ function setScreen(s){
 async function loadQueue(){
   state.queueLoading=true; render();
   const q=await apiQueue();
-  state.tickets=q.tickets||[]; state.queueLoading=false; render();
+  state.tickets=q.tickets||[]; state.resolvedCount=q.resolved_count||0;
+  state.queueLoading=false; render();
 }
 
 // Pick a ticket off the queue and open it in the coaching workspace.
@@ -406,6 +491,7 @@ function coachTicket(id){
   if(!t)return;
   state.activeTicket=t;
   state.query=t.message;
+  state.thread=[];              // cleared; runAnalysis adopts the server thread
   state.screen="coach"; state.view="split";
   runAnalysis();
 }
@@ -423,8 +509,29 @@ function submitQuery(){
   runAnalysis();
 }
 async function sendReply(){
-  state.sent=true; render();
-  state.feedback=await apiEvaluate(state.query,state.editedReply); render();
+  state.sent=true;
+  const tid=state.activeTicket ? state.activeTicket.ticket_id : null;
+  state.thread=[...state.thread,{speaker:"agent",text:state.editedReply}];
+  render();
+  const fb=await apiEvaluate(state.query,state.editedReply,tid);
+  state.feedback=fb;
+  if(fb.history && fb.history.length) state.thread=fb.history;
+  // Answered means handled: the ticket leaves the queue. A new customer
+  // message reopens it server-side, so this is not a one-way door.
+  if(tid){
+    state.resolved.add(tid);
+    state.tickets=state.tickets.filter(t=>t.ticket_id!==tid)
+                               .map((t,i)=>({...t,rank:i+1}));
+  }
+  render();
+}
+
+async function reopenTicket(id){
+  if(connMode==="live"){
+    try{ await fetch(API_BASE+"/tickets/"+encodeURIComponent(id)+"/reopen",{method:"POST"}); }catch{}
+  }
+  state.resolved.delete(id);
+  loadQueue();
 }
 
 function cell(label,value){
@@ -465,13 +572,15 @@ function queueScreen(){
               <span class="chip tier">${esc(t.customer_tier)}</span>
             </div>
           </div>
-          <div class="qWait"><b>${fmtWait(t.waiting_minutes)}</b></div>
+          <div class="qWait"><b>${fmtWait(t.waiting_minutes)}</b>${t.turns?`<div style="font-size:11px;color:var(--muted2);margin-top:3px">${t.turns} turn${t.turns>1?"s":""}</div>`:""}</div>
           <div><button class="coachBtn" onclick="coachTicket('${esc(t.ticket_id)}')">Coach this</button></div>
         </div>`).join("");
 
   return `
     <div class="qStats">
       <div class="qStat"><div class="n">${ts.length}</div><div class="k">OPEN TICKETS</div></div>
+      <div class="qStat"><div class="n" style="color:var(--green)">${state.resolvedCount||state.resolved.size}</div>
+        <div class="k">RESOLVED${(state.resolvedCount||state.resolved.size)?" · left the queue":""}</div></div>
       <div class="qStat"><div class="n" style="color:var(--red)">${high}</div><div class="k">HIGH ESCALATION RISK</div></div>
       <div class="qStat"><div class="n">${longest?fmtWait(longest):"—"}</div><div class="k">LONGEST WAIT</div></div>
       <div class="qStat"><div class="n" style="color:${top?scoreColor(top.priority_score):"var(--muted2)"}">${top?top.priority_score:"—"}</div>
@@ -507,8 +616,9 @@ function render(){
     <section class="panel">
       <div class="panelLabel">Customer</div>
       <div class="chat">
-        <div class="bCust">${esc(state.query)}</div>
-        ${state.sent&&state.editedReply?`<div class="bAgent">${esc(state.editedReply)}</div>`:""}
+        ${state.thread.length
+          ? state.thread.map(m=>`<div class="${m.speaker==="agent"?"bAgent":"bCust"}">${esc(m.text)}</div>`).join("")
+          : `<div class="bCust">${esc(state.query)}</div>`}
       </div>
       <div class="composer">
         <textarea id="draft" rows="3" placeholder="Type a customer message…  (⌘/Ctrl+Enter to send)">${esc(state.draftInput)}</textarea>
@@ -531,7 +641,7 @@ function render(){
           <div class="secTitle">Matched knowledge</div>
           ${a.faqs&&a.faqs.length?a.faqs.map(f=>`
             <div class="faq">
-              <div class="faqTop"><span class="faqId">${esc(f.id)}</span><span class="faqMatch">${f.match}% match</span></div>
+              <div class="faqTop"><span class="faqId">${esc(f.id)}</span><span class="faqMatch">BM25 ${f.score}</span></div>
               <div class="faqTitle">${esc(f.title)}</div>
               <div class="faqBody">${esc(f.body)}</div>
             </div>`).join("")
@@ -603,6 +713,11 @@ function render(){
 // boot — await the health check first, otherwise connMode is still "checking"
 // when the first request fires and it silently uses the mock on a live backend.
 (async ()=>{
+  // Same corpus the backend indexes, served from this folder.
+  try{
+    const r=await fetch('faqs.json');
+    if(r.ok) FAQ_INDEX=buildIndex(await r.json());
+  }catch{ /* leaves FAQ_INDEX null; cards show as unavailable */ }
   await checkHealth();
   loadQueue();
 })();

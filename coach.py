@@ -6,8 +6,10 @@ Single source of truth for the coach: the stub fact layer and the model calls.
 `app.py` (FastAPI) and `support_coach.ipynb` both use this module, so the
 prompts and the stub data exist in exactly one place.
 
-Nothing here knows about HTTP. Swap `get_order` / `get_policy` / `get_faqs`
+Nothing here knows about HTTP. Swap `get_order` / `get_policy` / `get_tickets`
 for real data sources and neither caller changes.
+
+FAQ retrieval lives in `retrieval.py` (real BM25 over faqs.json), not here.
 """
 
 import os
@@ -92,36 +94,6 @@ POLICIES: Dict[str, str] = {
     "account": "Verify identity before any account change. Never ask for full passwords.",
 }
 
-# Hand-written FAQ cards for the UI's "matched knowledge" panel, keyed by
-# issue_type. This is a demo stand-in, NOT a retriever — there is no scoring
-# and no search. Grounding comes from the keyed policy lookup above.
-FAQ_LIBRARY: Dict[str, List[Dict[str, Any]]] = {
-    "refund": [
-        {"id": "FAQ-2021", "title": "Refund processing time",
-         "body": "Approved refunds complete in 5-7 business days.", "match": 94},
-        {"id": "FAQ-2044", "title": "Refund delayed past 10 days",
-         "body": "Escalate to the billing team with the order ID.", "match": 88},
-    ],
-    "shipping": [
-        {"id": "FAQ-1103", "title": "Standard vs express shipping",
-         "body": "Standard 3-5 business days; express 1-2.", "match": 91},
-        {"id": "FAQ-1150", "title": "Where is my tracking number",
-         "body": "Tracking is emailed when the order ships.", "match": 79},
-    ],
-    "damaged": [
-        {"id": "FAQ-3300", "title": "Item arrived damaged",
-         "body": "Offer replacement or full refund; photo only for carrier claims.", "match": 96},
-    ],
-    "technical": [
-        {"id": "FAQ-4200", "title": "Hardware fault under warranty",
-         "body": "Route to technical support for diagnostic; 12-month coverage.", "match": 85},
-    ],
-    "account": [
-        {"id": "FAQ-5000", "title": "Account change verification",
-         "body": "Verify identity first; never request full passwords.", "match": 82},
-    ],
-}
-
 VALID_ISSUE_TYPES = list(POLICIES.keys())
 
 
@@ -137,12 +109,6 @@ def get_policy(issue_type: Optional[str]) -> Optional[str]:
     if not issue_type:
         return None
     return POLICIES.get(issue_type.strip().lower())
-
-
-def get_faqs(issue_type: Optional[str]) -> Optional[List[Dict[str, Any]]]:
-    if not issue_type:
-        return None
-    return FAQ_LIBRARY.get(issue_type.strip().lower())
 
 
 # ------------------------------------------------------------------ #
@@ -392,11 +358,22 @@ class AICoach:
 
     # ---------- 1. analyze ----------
 
-    def analyze_customer_message(self, customer_message: str) -> dict:
+    def analyze_customer_message(self, customer_message: str, history_text: str = "") -> dict:
+        # Prior turns change the reading of a message completely. "How much
+        # longer?" is a mild question in isolation and an escalation on the
+        # third ask after a broken promise. Rate the thread, not the sentence.
+        history_block = (
+            f"""Earlier in this conversation (oldest first):
+{history_text}
+
+"""
+            if history_text.strip()
+            else ""
+        )
         prompt = f"""You are an AI customer-support risk analyzer. Your ratings are used
 to rank a queue, so they only have value if they discriminate between tickets.
 
-Customer message:
+{history_block}Latest customer message:
 {customer_message}
 
 Rate against these definitions. Do not grade on a curve of politeness — a calm
@@ -420,6 +397,10 @@ sentiment — the tone of the message itself: positive, neutral, or negative.
 Calibration: in a normal queue most tickets are low or medium. Reserve "high" for
 cases that clearly meet the bar above. If you mark everything high, the ranking
 is worthless.
+
+If there is earlier conversation above, rate the thread as a whole: repeated
+asking, a commitment already made and missed, or frustration building across
+turns all raise escalation_risk even when the latest message alone reads calmly.
 
 Also extract the lookup keys:
 - "order_id": the order id if the customer mentions one (e.g. "WORD-88221"), else null.
@@ -446,11 +427,19 @@ Do not add explanations outside the JSON."""
         history_text: str = "",
         order: Optional[Dict[str, Any]] = None,
         policy: Optional[str] = None,
+        faqs: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         # Facts block. If we have no facts, we say so explicitly so the model
         # does NOT invent policy or order details.
         order_text = json.dumps(order, indent=2) if order else "No order record found."
         policy_text = policy if policy else "No specific policy found for this issue."
+        # Retrieved knowledge-base articles (real BM25 hits from retrieval.py).
+        # These join the facts block, so the same "state nothing that is not
+        # here" rule governs them.
+        if faqs:
+            faq_text = "\n".join(f"{f['id']} — {f['title']}: {f['body']}" for f in faqs)
+        else:
+            faq_text = "No knowledge-base article matched this message."
 
         prompt = f"""You are an expert customer-support agent drafting a reply for a human agent to send.
 
@@ -465,12 +454,19 @@ KNOWN FACTS (the only facts you may state as company policy or order status):
 {order_text}
 --- Relevant policy ---
 {policy_text}
+--- Retrieved knowledge-base articles ---
+{faq_text}
 
 Rules:
 - Acknowledge the concern and show empathy (this drives tone).
 - You MAY state specific numbers/status ONLY if they appear in KNOWN FACTS above.
+- This includes procedural detail: do not invent durations, step counts, button
+  timings, or instructions that are not written in KNOWN FACTS. If an article
+  says "force restart" without saying how, say "force restart" without saying how.
 - If a fact the customer wants is NOT in KNOWN FACTS, say you will check rather than inventing it.
 - Do not promise anything the policy does not support.
+- Write the message body only. No greeting placeholder such as [Customer Name],
+  no sign-off placeholder — a human agent sends this from their own account.
 - Keep it concise. Return only the reply text."""
         return self._call(prompt, max_tokens=350).strip()
 

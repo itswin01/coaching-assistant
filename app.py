@@ -14,11 +14,16 @@ Run:
 Then open the UI (index.html) — it calls http://localhost:8000.
 
 Endpoints:
-    POST /analyze   { "message": "...", "history": [{speaker,text}, ...] }
+    POST /analyze   { "message": "...", "ticket_id": "TCK-1", "history": [...] }
         -> analysis + looked-up facts + grounded suggested reply
-    POST /evaluate  { "customer_message": "...", "agent_message": "..." }
-        -> tone/empathy/clarity scores + coaching tip
+    POST /evaluate  { "customer_message": "...", "agent_message": "...", "ticket_id": "TCK-1" }
+        -> scores + tip; records the turn and resolves the ticket
+    GET  /tickets/{id}          -> stored thread + open/resolved
+    POST /tickets/{id}/reopen   -> put a handled ticket back in the queue
+    POST /tickets/reset         -> clear all history (demo reset)
     GET  /health
+
+Conversation history and open/resolved state live in `store.py`.
 """
 
 import os
@@ -33,12 +38,13 @@ from coach import (
     AICoach,
     TicketQueue,
     clean_key,
-    get_faqs,
     get_order,
     get_policy,
     get_tickets,
     priority_score,
 )
+from retrieval import search_faqs
+from store import get_store
 
 app = FastAPI(title="Support Coach API")
 
@@ -72,11 +78,18 @@ class HistoryItem(BaseModel):
 class AnalyzeRequest(BaseModel):
     message: str
     history: List[HistoryItem] = []
+    # When present, the server's stored thread is the source of truth and the
+    # turn is appended to it. Omit it for a one-off stateless analysis.
+    ticket_id: Optional[str] = None
 
 
 class EvaluateRequest(BaseModel):
     customer_message: str
     agent_message: str
+    ticket_id: Optional[str] = None
+    # Sending a reply marks the ticket handled so it leaves the queue. Set
+    # false to score a draft without resolving anything.
+    resolve: bool = True
 
 
 @app.get("/health")
@@ -88,20 +101,39 @@ def health():
 def analyze(req: AnalyzeRequest):
     try:
         c = coach()
-        analysis = c.analyze_customer_message(req.message)
+        store = get_store()
+
+        # Prior turns, before this message is recorded, so the analyser sees
+        # the conversation that led here rather than an echo of the input.
+        if req.ticket_id:
+            history_text = store.history_text(req.ticket_id)
+        else:
+            history_text = "\n".join(f"{h.speaker}: {h.text}" for h in req.history)
+
+        analysis = c.analyze_customer_message(req.message, history_text)
+
+        # A customer writing in again reopens a resolved ticket.
+        if req.ticket_id:
+            store.reopen(req.ticket_id)
+            store.add_message(req.ticket_id, "customer", req.message)
+            history_text = store.history_text(req.ticket_id)
 
         order_id = clean_key(analysis.get("order_id"))
         issue_type = clean_key(analysis.get("issue_type"))
 
-        # ---- fact lookups (keyed, not searched) ----
+        # ---- keyed lookups: exact, by ID ----
         order = get_order(order_id)
         policy = get_policy(issue_type)
-        faqs = get_faqs(issue_type)
+        # ---- retrieval: real BM25 ranking over the FAQ corpus ----
+        # issue_type is a boost, not a filter; the whole corpus is searched.
+        faqs = search_faqs(req.message, k=3, category=issue_type)
 
-        history_text = "\n".join(f"{h.speaker}: {h.text}" for h in req.history)
-        history_text += f"\ncustomer: {req.message}"
+        # history_text already includes this turn when a ticket_id was given;
+        # for a stateless call, append it so the drafter sees the full thread.
+        if not req.ticket_id:
+            history_text = (history_text + f"\ncustomer: {req.message}").strip()
 
-        suggested = c.suggest_reply(req.message, history_text, order, policy)
+        suggested = c.suggest_reply(req.message, history_text, order, policy, faqs)
 
         return {
             "sentiment": analysis["sentiment"],
@@ -116,6 +148,7 @@ def analyze(req: AnalyzeRequest):
             "order_found": order is not None,
             "policy_found": policy is not None,
             "suggested_reply": suggested,
+            "history": store.history(req.ticket_id) if req.ticket_id else [],
         }
     except ValueError as e:
         # Missing key etc.
@@ -139,13 +172,23 @@ def queue():
     """
     try:
         c = coach()
-        tickets = get_tickets()
+        store = get_store()
+        resolved = store.resolved_ids()
+
+        # A handled ticket leaves the queue. Analysing it anyway would burn a
+        # model call per refresh to rank something nobody should work on.
+        tickets = [t for t in get_tickets() if t["ticket_id"] not in resolved]
 
         def enrich(ticket: dict) -> dict:
-            analysis = c.analyze_customer_message(ticket["message"])
+            tid = ticket["ticket_id"]
+            # Rate the whole thread — a follow-up reads differently from a
+            # first contact, and the queue should reflect that.
+            history_text = store.history_text(tid)
+            analysis = c.analyze_customer_message(ticket["message"], history_text)
             score, parts = priority_score(analysis, ticket)
             return {
                 **ticket,
+                "turns": len(store.history(tid)),
                 "sentiment": analysis.get("sentiment"),
                 "urgency": analysis.get("urgency"),
                 "escalation_risk": analysis.get("escalation_risk"),
@@ -168,7 +211,11 @@ def queue():
         for rank, t in enumerate(ordered, start=1):
             t["rank"] = rank
 
-        return {"tickets": ordered, "count": len(ordered)}
+        return {
+            "tickets": ordered,
+            "count": len(ordered),
+            "resolved_count": len(resolved),
+        }
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:  # noqa: BLE001
@@ -179,13 +226,50 @@ def queue():
 def evaluate(req: EvaluateRequest):
     try:
         fb = coach().evaluate_agent_response(req.customer_message, req.agent_message)
+
+        # Record the agent's turn and close the ticket. Scoring and resolving
+        # are the same event here: the agent has answered and moved on.
+        store = get_store()
+        if req.ticket_id:
+            store.add_message(req.ticket_id, "agent", req.agent_message)
+            if req.resolve:
+                store.resolve(req.ticket_id)
+
         return {
             "tone_score": fb.tone_score,
             "empathy_score": fb.empathy_score,
             "clarity_score": fb.clarity_score,
             "coaching_tip": fb.coaching_tip,
+            "resolved": bool(req.ticket_id and req.resolve),
+            "history": store.history(req.ticket_id) if req.ticket_id else [],
         }
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"Evaluation failed: {e}")
+
+
+@app.get("/tickets/{ticket_id}")
+def ticket(ticket_id: str):
+    """The stored thread for one ticket, plus whether it is still open."""
+    store = get_store()
+    return {
+        "ticket_id": ticket_id,
+        "history": store.history(ticket_id),
+        "resolved": store.is_resolved(ticket_id),
+    }
+
+
+@app.post("/tickets/{ticket_id}/reopen")
+def reopen_ticket(ticket_id: str):
+    """Put a handled ticket back in the queue without a new customer message."""
+    store = get_store()
+    store.reopen(ticket_id)
+    return {"ticket_id": ticket_id, "resolved": False}
+
+
+@app.post("/tickets/reset")
+def reset_tickets():
+    """Clear all conversation history and reopen everything. Demo reset."""
+    get_store().reset()
+    return {"status": "reset"}
