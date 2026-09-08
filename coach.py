@@ -340,6 +340,11 @@ class AICoach:
         state that explicitly in the prompt, which is what the mode requires.
         """
         last_err = None
+        # Reasoning models (gpt-oss, qwen3) spend max_completion_tokens on thinking
+        # before they emit anything. At a tight budget they return an EMPTY string,
+        # which JSON mode then rejects with json_validate_failed. Keeping effort low
+        # and the budget generous is what stops that.
+        use_reasoning = True
         for attempt in range(retries + 1):
             try:
                 kwargs = {
@@ -350,10 +355,20 @@ class AICoach:
                 }
                 if json_mode:
                     kwargs["response_format"] = {"type": "json_object"}
+                if use_reasoning:
+                    kwargs["reasoning_effort"] = "low"
+                    # "raw" is rejected alongside JSON mode; hidden keeps the
+                    # thinking out of the content we parse.
+                    kwargs["reasoning_format"] = "hidden"
                 resp = self.client.chat.completions.create(**kwargs)
                 return self._extract_text(resp)
             except Exception as e:  # noqa: BLE001 - demo-level robustness
                 last_err = e
+                # Non-reasoning models reject reasoning_*; drop them and retry so
+                # GROQ_MODEL can point at either kind.
+                if use_reasoning and "reasoning" in str(e).lower():
+                    use_reasoning = False
+                    continue
                 if attempt < retries:
                     time.sleep(1.5 * (attempt + 1))
         raise RuntimeError(f"API call failed after {retries + 1} attempts: {last_err}")
@@ -378,14 +393,35 @@ class AICoach:
     # ---------- 1. analyze ----------
 
     def analyze_customer_message(self, customer_message: str) -> dict:
-        prompt = f"""You are an AI customer-support risk analyzer.
-
-Analyze the customer message below.
+        prompt = f"""You are an AI customer-support risk analyzer. Your ratings are used
+to rank a queue, so they only have value if they discriminate between tickets.
 
 Customer message:
 {customer_message}
 
-Extract the lookup keys as well:
+Rate against these definitions. Do not grade on a curve of politeness — a calm
+customer who cannot work is a bigger problem than a rude one who is merely waiting.
+
+escalation_risk — the risk THIS customer escalates, cancels, or complains publicly:
+- high:   already angry AND has a concrete overdue grievance — an explicit demand,
+          a threat to cancel/chargeback/review, a repeat contact, or a broken promise.
+- medium: a legitimate unresolved problem and visible frustration, but no demand
+          to escalate yet.
+- low:    routine question, minor issue, or a cooperative tone.
+
+urgency — how fast this must be answered:
+- high:   the customer is blocked right now (cannot use the product, locked out)
+          or states a hard deadline.
+- medium: real inconvenience with time pressure, but a workaround or slack exists.
+- low:    informational, or the customer says there is no rush.
+
+sentiment — the tone of the message itself: positive, neutral, or negative.
+
+Calibration: in a normal queue most tickets are low or medium. Reserve "high" for
+cases that clearly meet the bar above. If you mark everything high, the ranking
+is worthless.
+
+Also extract the lookup keys:
 - "order_id": the order id if the customer mentions one (e.g. "WORD-88221"), else null.
 - "issue_type": EXACTLY ONE of {VALID_ISSUE_TYPES}, or null if none fit.
 
@@ -400,7 +436,7 @@ Return ONLY valid JSON, exactly this structure:
 }}
 
 Do not add explanations outside the JSON."""
-        return self._parse_json(self._call(prompt, max_tokens=300, json_mode=True))
+        return self._parse_json(self._call(prompt, max_tokens=1024, json_mode=True))
 
     # ---------- 2. suggest reply (grounded) ----------
 
@@ -462,7 +498,7 @@ Return ONLY valid JSON, exactly:
 }}
 
 No text outside the JSON."""
-        result = self._parse_json(self._call(prompt, max_tokens=300, json_mode=True))
+        result = self._parse_json(self._call(prompt, max_tokens=1024, json_mode=True))
         return CoachingFeedback(
             tone_score=int(result["tone_score"]),
             empathy_score=int(result["empathy_score"]),
