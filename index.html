@@ -99,6 +99,75 @@
   .score b { color:var(--text); font-size:15px; }
   .tip { margin-top:8px; font-size:13px; color:#c9d4de; line-height:1.5; }
 
+  /* ---------- landing / mode picker ---------- */
+  .landing { min-height:70vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px; }
+  .landingHead { text-align:center; }
+  .landingHead h1 { font-size:28px; font-weight:700; margin:0 0 6px; letter-spacing:-.4px; }
+  .landingHead p { color:var(--muted); font-size:14px; margin:0; }
+  .modes { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; max-width:720px; width:100%; }
+  .modeCard { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px;
+    cursor:pointer; text-align:left; color:inherit; font:inherit; transition:border-color .15s, transform .15s; }
+  .modeCard:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .modeCard h3 { margin:0 0 6px; font-size:17px; font-weight:700; }
+  .modeCard p { margin:0; font-size:13px; color:var(--muted); line-height:1.55; }
+  .modeTag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.4px; padding:3px 8px;
+    border-radius:5px; margin-bottom:10px; }
+  .modeTag.demo { background:#2a2113; color:var(--amber); }
+  .modeTag.agent { background:#12261c; color:var(--green); }
+
+  /* ---------- login ---------- */
+  .loginWrap { min-height:70vh; display:flex; align-items:center; justify-content:center; }
+  .loginCard { background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:28px; width:100%; max-width:380px; }
+  .loginCard h2 { margin:0 0 4px; font-size:19px; font-weight:700; }
+  .loginCard .sub2 { color:var(--muted2); font-size:12px; margin-bottom:20px; }
+  .field { margin-bottom:14px; }
+  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+  .field input { width:100%; background:var(--base); border:1px solid #2a3a48; border-radius:8px;
+    color:var(--text); padding:10px 12px; font-size:14px; font-family:inherit; }
+  .field input:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .loginErr { background:#2e1a1a; border:1px solid #5c2f2f; color:#f0a0a0; border-radius:8px;
+    padding:10px 12px; font-size:13px; margin-bottom:14px; }
+  .loginBtn { width:100%; background:var(--accent); color:#08111a; border:none; border-radius:8px;
+    padding:11px; font-size:14px; font-weight:700; cursor:pointer; }
+  .loginBtn[disabled] { opacity:.6; cursor:default; }
+  .loginHint { margin-top:16px; padding-top:14px; border-top:1px solid var(--line);
+    font-size:11px; color:var(--muted2); line-height:1.6; }
+  .loginHint code { font-family:'IBM Plex Mono',monospace; color:var(--muted); }
+  .linkBtn { background:none; border:none; color:var(--accent); font:inherit; font-size:12px;
+    cursor:pointer; padding:0; text-decoration:underline; }
+
+  /* ---------- performance dashboard ---------- */
+  .perfGrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .card.wide { grid-column:1/-1; }
+  .cardTitle { font-size:13px; font-weight:600; margin-bottom:2px; }
+  .cardNote { font-size:11px; color:var(--muted2); margin-bottom:14px; line-height:1.5; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--muted); }
+  .legend span { display:flex; align-items:center; gap:6px; }
+  .swatch { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  .empty { padding:26px 14px; text-align:center; color:var(--muted2); font-size:13px; line-height:1.6;
+    border:1px dashed #2a3a48; border-radius:10px; }
+  .empty b { color:var(--muted); font-weight:600; }
+  .smallMult { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; }
+  .smBox { background:var(--base); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .smLabel { font-size:11px; color:var(--muted2); margin-bottom:2px; }
+  .smValue { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.5px; }
+  .smValue span { font-size:12px; color:var(--muted2); font-weight:500; }
+  .tipRow { display:flex; gap:10px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line);
+    font-size:13px; color:#c9d4de; line-height:1.5; }
+  .tipRow:last-child { border-bottom:none; }
+  .tipCount { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent);
+    background:#12243a; border-radius:5px; padding:2px 7px; flex-shrink:0; }
+  .hbar { display:grid; grid-template-columns:96px 1fr 34px; gap:10px; align-items:center;
+    font-size:12px; color:var(--muted); padding:5px 0; }
+  .hbar .track { display:block; background:#0f1720; border-radius:5px; height:10px; overflow:hidden; }
+  .hbar .fill { display:block; height:100%; border-radius:5px; min-width:3px; }
+  .hbar .num { text-align:right; color:var(--text); font-variant-numeric:tabular-nums; font-weight:600; }
+  .who { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+  .avatar { width:26px; height:26px; border-radius:26px; background:#25384a; color:#cfe0f0;
+    display:grid; place-items:center; font-size:11px; font-weight:700; }
+
   /* ---------- ticket queue dashboard ---------- */
   .qStats { display:flex; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
   .qStat { flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line);
@@ -175,6 +244,15 @@
  *  Config                                                       *
  * ============================================================= */
 const API_BASE = "http://localhost:8000";
+
+// Every data endpoint requires a session token. Demo mode gets one freely from
+// /auth/demo; the agent interface gets one by signing in. Same auth path either
+// way, so there is no unauthenticated branch to reach by accident.
+function authHeaders(){
+  const h={"Content-Type":"application/json"};
+  if(state.token) h["Authorization"]="Bearer "+state.token;
+  return h;
+}
 
 /* ============================================================= *
  *  Mock fallback — used only when the backend is unreachable,   *
@@ -407,7 +485,7 @@ async function checkHealth(){
 async function apiAnalyze(message,history,ticket_id){
   if(connMode==="live"){
     try{
-      const r=await fetch(API_BASE+"/analyze",{method:"POST",headers:{"Content-Type":"application/json"},
+      const r=await fetch(API_BASE+"/analyze",{method:"POST",headers:authHeaders(),
         body:JSON.stringify({message,history,ticket_id})});
       if(!r.ok)throw new Error(await r.text());
       return await r.json();
@@ -418,8 +496,11 @@ async function apiAnalyze(message,history,ticket_id){
 async function apiEvaluate(customer_message,agent_message,ticket_id){
   if(connMode==="live"){
     try{
-      const r=await fetch(API_BASE+"/evaluate",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({customer_message,agent_message,ticket_id})});
+      const r=await fetch(API_BASE+"/evaluate",{method:"POST",headers:authHeaders(),
+        body:JSON.stringify({customer_message,agent_message,ticket_id,
+          sentiment_before:(state.analysis||{}).sentiment,
+          issue_type:(state.analysis||{}).issue_type,
+          escalation_risk:(state.analysis||{}).escalation_risk})});
       if(!r.ok)throw new Error(await r.text());
       return await r.json();
     }catch{ connMode="mock"; mockReason="backend error"; render(); return mockEvaluate(); }
@@ -430,7 +511,7 @@ async function apiEvaluate(customer_message,agent_message,ticket_id){
 async function apiQueue(){
   if(connMode==="live"){
     try{
-      const r=await fetch(API_BASE+"/queue",{signal:AbortSignal.timeout(60000)});
+      const r=await fetch(API_BASE+"/queue",{headers:authHeaders(),signal:AbortSignal.timeout(60000)});
       if(!r.ok)throw new Error(await r.text());
       return await r.json();
     }catch{ connMode="mock"; mockReason="backend error"; render(); return mockQueue(); }
@@ -443,7 +524,11 @@ async function apiQueue(){
  * ============================================================= */
 const SIG={high:"var(--red)",negative:"var(--red)",medium:"var(--amber)",neutral:"var(--muted2)",low:"var(--green)",positive:"var(--green)"};
 const state={
-  screen:"queue",            // queue | coach
+  mode:null,                 // null = landing | "demo" | "agent"
+  token:null, agent:null,    // session
+  loginEmail:"", loginPassword:"", loginError:"", loggingIn:false,
+  analytics:null, analyticsLoading:false,
+  screen:"queue",            // queue | coach | perf
   view:"split",
   query:"I have been waiting for my refund on order WORD-88221 for 20 days! This is ridiculous. I want my money back immediately!",
   draftInput:"",
@@ -471,11 +556,58 @@ async function runAnalysis(){
   state.sent=false; state.feedback=null; state.loading=false; render();
 }
 
+async function enterDemo(){
+  try{
+    const r=await fetch(API_BASE+"/auth/demo",{method:"POST",headers:{"Content-Type":"application/json"}});
+    if(r.ok){ const d=await r.json(); state.token=d.token; state.agent=d.agent; }
+  }catch{ /* backend down: demo still runs on the built-in mock */ }
+  state.mode="demo"; state.screen="queue"; render(); loadQueue();
+}
+
+function enterAgent(){ state.mode="agent"; state.screen="queue"; render(); }
+
+async function doLogin(){
+  if(state.loggingIn) return;
+  state.loginError=""; state.loggingIn=true; render();
+  try{
+    const r=await fetch(API_BASE+"/auth/login",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email:state.loginEmail.trim(),password:state.loginPassword})});
+    if(!r.ok){
+      const d=await r.json().catch(()=>({}));
+      state.loginError=d.detail||"Sign-in failed."; state.loggingIn=false; render(); return;
+    }
+    const d=await r.json();
+    state.token=d.token; state.agent=d.agent;
+    state.loginPassword=""; state.loggingIn=false;
+    state.screen="queue"; render(); loadQueue();
+  }catch{
+    state.loginError="Cannot reach the backend. Start it on port 8000 and try again.";
+    state.loggingIn=false; render();
+  }
+}
+
+function signOut(){
+  state.token=null; state.agent=null; state.mode=null;
+  state.tickets=[]; state.analytics=null; state.analysis=null;
+  state.activeTicket=null; state.thread=[]; state.screen="queue";
+  render();
+}
+
+async function loadAnalytics(){
+  state.analyticsLoading=true; render();
+  try{
+    const r=await fetch(API_BASE+"/analytics",{headers:authHeaders()});
+    state.analytics = r.ok ? await r.json() : null;
+  }catch{ state.analytics=null; }
+  state.analyticsLoading=false; render();
+}
+
 function setView(v){state.view=v;render();}
 function setScreen(s){
   state.screen=s; render();
   if(s==="queue"&&!state.tickets.length&&!state.queueLoading)loadQueue();
   if(s==="coach"&&!state.analysis&&!state.loading)runAnalysis();
+  if(s==="perf")loadAnalytics();
 }
 
 async function loadQueue(){
@@ -528,7 +660,7 @@ async function sendReply(){
 
 async function reopenTicket(id){
   if(connMode==="live"){
-    try{ await fetch(API_BASE+"/tickets/"+encodeURIComponent(id)+"/reopen",{method:"POST"}); }catch{}
+    try{ await fetch(API_BASE+"/tickets/"+encodeURIComponent(id)+"/reopen",{method:"POST",headers:authHeaders()}); }catch{}
   }
   state.resolved.delete(id);
   loadQueue();
@@ -605,7 +737,257 @@ function queueScreen(){
     </div>`;
 }
 
+
+/* ============================================================= *
+ *  Landing, login, and the agent performance dashboard          *
+ * ============================================================= */
+
+// Re-rendering replaces the form nodes, so restore focus and the typed value.
+function focusLogin(){
+  const e=document.getElementById("lemail"), p=document.getElementById("lpass");
+  if(p) p.value=state.loginPassword;
+  if(e && !state.loginEmail) e.focus();
+  else if(p && state.loginEmail && !state.loginPassword) p.focus();
+}
+
+function landingScreen(){
+  return `
+  <div class="landing">
+    <div class="landingHead">
+      <h1>Support Coach</h1>
+      <p>Choose how you want to open the workspace.</p>
+    </div>
+    <div class="modes">
+      <button class="modeCard" onclick="enterDemo()">
+        <span class="modeTag demo">DEMO MODE</span>
+        <h3>Demo mode</h3>
+        <p>The full workspace with no sign-in — ticket queue, grounded reply drafting
+           and coaching. Open to anyone, so it carries no real customer data.</p>
+      </button>
+      <button class="modeCard" onclick="enterAgent()">
+        <span class="modeTag agent">AGENT INTERFACE</span>
+        <h3>Agent interface</h3>
+        <p>What a support agent actually uses. Requires a company account, and adds
+           a performance dashboard built from the tickets you handle.</p>
+      </button>
+    </div>
+  </div>`;
+}
+
+function loginScreen(){
+  return `
+  <div class="loginWrap">
+    <form class="loginCard" onsubmit="event.preventDefault();doLogin()">
+      <h2>Agent sign-in</h2>
+      <div class="sub2">Accounts are provisioned by your company. There is no self-registration.</div>
+      ${state.loginError?`<div class="loginErr">${esc(state.loginError)}</div>`:""}
+      <div class="field">
+        <label for="lemail">Work email</label>
+        <input id="lemail" type="email" autocomplete="username" value="${esc(state.loginEmail)}"
+               oninput="state.loginEmail=this.value" placeholder="you@company.com" />
+      </div>
+      <div class="field">
+        <label for="lpass">Password</label>
+        <input id="lpass" type="password" autocomplete="current-password"
+               oninput="state.loginPassword=this.value" placeholder="........" />
+      </div>
+      <button class="loginBtn" type="submit" ${state.loggingIn?"disabled":""}>
+        ${state.loggingIn?"Signing in…":"Sign in"}</button>
+      <div class="loginHint">
+        Demo accounts: <code>agent@support.local</code> / <code>demo1234</code><br/>
+        Sign-in is enforced by the API, not just this screen — but it runs over plain
+        HTTP with no rate limiting. Demo-grade, not production auth.<br/>
+        <button type="button" class="linkBtn" onclick="signOut()">&larr; Back</button>
+      </div>
+    </form>
+  </div>`;
+}
+
+/* ---------- chart primitives: hand-authored SVG, no libraries ---------- */
+
+// Column chart. One series, so no legend — the card title names it.
+function barChart(data, w=1200, h=150){
+  const max=Math.max(1,...data.map(d=>d.count));
+  const n=data.length, gap=8, bw=Math.max(3,(w-gap*(n-1))/n);
+  const bars=data.map((d,i)=>{
+    const bh=d.count?Math.max(4,(d.count/max)*(h-34)):0;
+    const x=i*(bw+gap), y=h-28-bh;
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}"
+      rx="4" fill="var(--accent)" opacity="${d.count?1:0}"><title>${d.date}: ${d.count} handled</title></rect>`;
+  }).join("");
+  const ticks=[data[0],data[data.length-1]].filter(Boolean).map((d,i)=>
+    `<text x="${i?w:0}" y="${h-6}" text-anchor="${i?"end":"start"}" font-size="13" fill="var(--muted2)">${d.date.slice(5)}</text>`).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" preserveAspectRatio="xMidYMid meet" role="img"
+    aria-label="Tickets handled per day over the last ${n} days">
+    <line x1="0" y1="${h-28}" x2="${w}" y2="${h-28}" stroke="var(--line)" stroke-width="1"/>
+    ${bars}${ticks}</svg>`;
+}
+
+// 100% stacked bar for a three-state polarity split. Status colours, each
+// directly labelled, so identity never rests on colour alone.
+function shiftBar(shift, w=1200, h=48){
+  const total=shift.measured||0;
+  if(!total) return "";
+  const segs=[
+    {k:"calmed",   v:shift.calmed,    c:"var(--green)"},
+    {k:"unchanged",v:shift.unchanged, c:"#6f8090"},
+    {k:"escalated",v:shift.escalated, c:"var(--red)"},
+  ].filter(s=>s.v>0);
+  let x=0;
+  const rects=segs.map(s=>{
+    const sw=(s.v/total)*w;
+    const r=`<rect x="${x.toFixed(1)}" y="0" width="${Math.max(0,sw-2).toFixed(1)}" height="24" rx="5" fill="${s.c}"><title>${s.k}: ${s.v} of ${total}</title></rect>`;
+    const label=sw>130?`<text x="${(x+sw/2-1).toFixed(1)}" y="43" text-anchor="middle" font-size="14" fill="var(--muted)">${s.k} ${s.v}</text>`:"";
+    x+=sw; return r+label;
+  }).join("");
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" preserveAspectRatio="xMidYMid meet" role="img"
+    aria-label="Customer sentiment after the agent replied">${rects}</svg>`;
+}
+
+// Sparkline for one score over time. Nulls are gaps, not zeros — a day with no
+// tickets is missing data, and plotting it as 0 would invent a bad score.
+function sparkline(series, w=340, h=96){
+  const pts=series.map((v,i)=>({v,i})).filter(p=>p.v!=null);
+  if(pts.length===0) return `<div style="height:${h}px;display:grid;place-items:center;font-size:11px;color:var(--muted2)">no data yet</div>`;
+  const n=series.length, min=0, max=10;
+  const pad=9;
+  const X=i=>pad+(i/Math.max(1,n-1))*(w-2*pad), Y=v=>h-pad-((v-min)/(max-min))*(h-2*pad);
+  if(pts.length===1){
+    const p=pts[0];
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="single measurement of ${p.v} out of 10">
+      <circle cx="${X(p.i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="6" fill="var(--accent)"/></svg>`;
+  }
+  const d=pts.map((p,k)=>`${k?"L":"M"}${X(p.i).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="trend, latest ${last.v} out of 10">
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${X(last.i).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="6" fill="var(--accent)" stroke="var(--base)" stroke-width="3"/></svg>`;
+}
+
+function hbars(obj, colorFor){
+  const entries=Object.entries(obj||{}).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return "";
+  const max=Math.max(...entries.map(e=>e[1]));
+  return entries.map(([k,v])=>`
+    <div class="hbar">
+      <span style="text-transform:capitalize">${esc(k)}</span>
+      <span class="track"><span class="fill" style="width:${(v/max*100).toFixed(0)}%;background:${colorFor?colorFor(k):"var(--accent)"}"></span></span>
+      <span class="num">${v}</span>
+    </div>`).join("");
+}
+
+const RISK_COLOR = k => k==="high"?"var(--red)":k==="medium"?"var(--amber)":k==="low"?"var(--green)":"#6f8090";
+
+function perfScreen(){
+  const a=state.analytics;
+  if(state.analyticsLoading&&!a) return `<div class="card"><div class="empty">Loading your activity…</div></div>`;
+  if(!a) return `<div class="card"><div class="empty">Could not load analytics. Is the backend running?</div></div>`;
+
+  const s=a.sentiment_shift, measured=s.measured;
+  const calmedPct = measured ? Math.round(s.calmed/measured*100) : null;
+
+  if(a.handled===0) return `
+    <div class="card wide">
+      <div class="cardTitle">Your performance</div>
+      <div class="cardNote">Built from tickets you handle — there is no seeded history, so this starts empty.</div>
+      <div class="empty">
+        <b>No handled tickets yet.</b><br/>
+        Work a ticket from the Queue and send a reply. This dashboard will then show
+        your volume, coaching scores, issue mix, and whether customers calmed down
+        after your replies.
+      </div>
+    </div>`;
+
+  return `
+  <div class="perfGrid">
+    <div class="card">
+      <div class="cardTitle">Tickets handled</div>
+      <div class="cardNote">All time, by you</div>
+      <div class="smValue" style="font-size:34px">${a.handled}</div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">Handled today</div>
+      <div class="cardNote">Busiest day in range: ${a.busiest_day}</div>
+      <div class="smValue" style="font-size:34px">${a.today}</div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">Average coaching score</div>
+      <div class="cardNote">Mean of tone, empathy and clarity</div>
+      <div class="smValue" style="font-size:34px">${a.scores.overall}<span> / 10</span></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">Customers calmed</div>
+      <div class="cardNote">${measured?`of ${measured} ticket${measured>1?"s":""} where the customer replied`:"awaiting a customer reply"}</div>
+      <div class="smValue" style="font-size:34px;color:${calmedPct==null?"var(--muted2)":calmedPct>=50?"var(--green)":"var(--amber)"}">
+        ${calmedPct==null?"—":calmedPct+"%"}</div>
+    </div>
+
+    <div class="card wide">
+      <div class="cardTitle">Did the customer calm down after your reply?</div>
+      <div class="cardNote">
+        Compares how the customer sounded before your reply against their next message.
+        ${measured
+          ? `Measured on ${measured} of ${a.handled} handled ticket${a.handled>1?"s":""} — only tickets where the customer wrote back can be measured.`
+          : `Not measurable yet: no customer has replied since you answered. Send a follow-up as the customer in the Coaching tab to see this fill in.`}
+      </div>
+      ${measured ? shiftBar(s) + `
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--green)"></i>Calmed ${s.calmed}</span>
+          <span><i class="swatch" style="background:#6f8090"></i>Unchanged ${s.unchanged}</span>
+          <span><i class="swatch" style="background:var(--red)"></i>Escalated ${s.escalated}</span>
+        </div>`
+      : `<div class="empty">Nothing measured yet.</div>`}
+    </div>
+
+    <div class="card wide">
+      <div class="cardTitle">Tickets handled per day</div>
+      <div class="cardNote">Last 14 days</div>
+      ${barChart(a.volume)}
+    </div>
+
+    <div class="card wide">
+      <div class="cardTitle">Coaching scores over time</div>
+      <div class="cardNote">Daily average out of 10. Gaps are days you handled nothing — not zero scores.</div>
+      <div class="smallMult">
+        ${["tone","empathy","clarity"].map(k=>`
+          <div class="smBox">
+            <div class="smLabel" style="text-transform:capitalize">${k}</div>
+            <div class="smValue">${a.scores[k]}<span> / 10</span></div>
+            ${sparkline(a.score_trend.map(d=>d[k]))}
+          </div>`).join("")}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">Issues you handled</div>
+      <div class="cardNote">By issue type</div>
+      ${hbars(a.by_issue)||`<div class="empty">No data.</div>`}
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">Escalation risk you took on</div>
+      <div class="cardNote">Risk level of the tickets you picked up</div>
+      ${hbars(a.by_risk,RISK_COLOR)||`<div class="empty">No data.</div>`}
+    </div>
+
+    <div class="card wide">
+      <div class="cardTitle">Your most frequent coaching tips</div>
+      <div class="cardNote">Repeated advice is the habit worth changing</div>
+      ${a.top_tips.length
+        ? a.top_tips.map(t=>`<div class="tipRow"><span class="tipCount">x${t.count}</span><span>${esc(t.tip)}</span></div>`).join("")
+        : `<div class="empty">No tips yet.</div>`}
+    </div>
+  </div>`;
+}
+
 function render(){
+  const root=document.getElementById("root");
+
+  // Mode gate. Landing first, then sign-in for the agent interface. Nothing
+  // below renders until one of those is satisfied.
+  if(state.mode===null){ root.innerHTML=landingScreen(); return; }
+  if(state.mode==="agent" && !state.token){ root.innerHTML=loginScreen(); focusLogin(); return; }
+
   const a=state.analysis;
   const showC=state.view==="customer"||state.view==="split";
   const showA=state.view==="agent"||state.view==="split";
@@ -676,7 +1058,11 @@ function render(){
   }
 
   const onQueue = state.screen==="queue";
-  const sub = onQueue
+  const onPerf  = state.screen==="perf";
+  const isAgent = state.mode==="agent";
+  const sub = onPerf
+    ? "Your performance · live activity only"
+    : onQueue
     ? "Ticket queue · priority-ordered"
     : state.activeTicket
       ? `Coaching ${state.activeTicket.ticket_id} · ${state.activeTicket.customer}`
@@ -689,14 +1075,20 @@ function render(){
         <div class="conn"><span class="dot ${connClass}"></span>${connLabel}</div>
         <div class="toggle">
           <button class="${onQueue?"active":""}" onclick="setScreen('queue')">Queue</button>
-          <button class="${!onQueue?"active":""}" onclick="setScreen('coach')">Coaching</button>
+          <button class="${state.screen==="coach"?"active":""}" onclick="setScreen('coach')">Coaching</button>
+          ${isAgent?`<button class="${onPerf?"active":""}" onclick="setScreen('perf')">Agent dashboard</button>`:""}
         </div>
-        ${onQueue?"":`<div class="toggle">
+        ${isAgent&&state.agent?`<div class="who">
+          <span class="avatar">${esc((state.agent.name||"A").split(" ").map(x=>x[0]).join("").slice(0,2))}</span>
+          <span>${esc(state.agent.name)}</span>
+          <button class="linkBtn" onclick="signOut()">Sign out</button>
+        </div>`:`<button class="linkBtn" onclick="signOut()">Exit demo</button>`}
+        ${(onQueue||onPerf)?"":`<div class="toggle">
           ${["customer","split","agent"].map(v=>`<button class="${state.view===v?"active":""}" onclick="setView('${v}')">${v==="customer"?"Customer":v==="agent"?"Agent":"Both"}</button>`).join("")}
         </div>`}
       </div>
     </header>
-    ${onQueue ? queueScreen() : `
+    ${onPerf ? perfScreen() : onQueue ? queueScreen() : `
       ${state.activeTicket?`<div style="margin-bottom:12px"><button class="backBtn" onclick="setScreen('queue')">← Back to queue</button></div>`:""}
       <div class="stage" style="grid-template-columns:${state.view==="split"?"1fr 1.4fr":"1fr"}">
         ${customerPanel}${agentPanel}
@@ -718,8 +1110,7 @@ function render(){
     const r=await fetch('faqs.json');
     if(r.ok) FAQ_INDEX=buildIndex(await r.json());
   }catch{ /* leaves FAQ_INDEX null; cards show as unavailable */ }
-  await checkHealth();
-  loadQueue();
+  await checkHealth();   // renders the landing screen; no queue call until a mode is picked
 })();
 </script>
 </body>

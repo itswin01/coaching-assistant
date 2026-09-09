@@ -37,7 +37,7 @@ class Store:
     def __init__(self, path: str = STATE_FILE):
         self.path = path
         self._lock = threading.Lock()
-        self._data: Dict[str, Any] = {"conversations": {}, "resolved": {}}
+        self._data: Dict[str, Any] = {"conversations": {}, "resolved": {}, "events": []}
         self._load()
 
     # ---------- persistence ----------
@@ -50,6 +50,7 @@ class Store:
                 loaded = json.load(f)
             self._data["conversations"] = loaded.get("conversations", {})
             self._data["resolved"] = loaded.get("resolved", {})
+            self._data["events"] = loaded.get("events", [])
         except (OSError, json.JSONDecodeError):
             # A corrupt state file must not stop the server booting — the
             # tickets themselves come from coach.TICKETS and are unaffected.
@@ -113,10 +114,49 @@ class Store:
         with self._lock:
             return dict(self._data["resolved"])
 
+    # ---------- analytics events ----------
+    #
+    # One event per handled ticket. Everything the agent dashboard shows is
+    # derived from these — there is no seeded history, so a fresh install
+    # genuinely starts empty and fills as tickets are worked.
+
+    def record_handled(self, agent: str, ticket_id: str, payload: Dict[str, Any]) -> None:
+        """Record that an agent answered a ticket."""
+        with self._lock:
+            self._data["events"].append({
+                "type": "handled",
+                "agent": agent,
+                "ticket_id": ticket_id,
+                "at": _now(),
+                **payload,
+            })
+            self._save_locked()
+
+    def record_sentiment_after(self, ticket_id: str, sentiment: str) -> None:
+        """Attach the customer's next-message sentiment to the last reply.
+
+        This is what makes "did the customer calm down or escalate" measurable
+        rather than guessed: it compares how they sounded before the agent's
+        reply against how they sound in their following message. Only fires
+        when a customer actually writes back, so it covers a subset of tickets.
+        """
+        with self._lock:
+            for ev in reversed(self._data["events"]):
+                if ev.get("ticket_id") == ticket_id and ev.get("type") == "handled":
+                    if ev.get("sentiment_after") is None:
+                        ev["sentiment_after"] = sentiment
+                        self._save_locked()
+                    return
+
+    def events(self, agent: Optional[str] = None) -> List[Dict[str, Any]]:
+        with self._lock:
+            evs = list(self._data["events"])
+        return [e for e in evs if agent is None or e.get("agent") == agent]
+
     def reset(self) -> None:
         """Clear all state — for demo resets and tests."""
         with self._lock:
-            self._data = {"conversations": {}, "resolved": {}}
+            self._data = {"conversations": {}, "resolved": {}, "events": []}
             self._save_locked()
 
 
